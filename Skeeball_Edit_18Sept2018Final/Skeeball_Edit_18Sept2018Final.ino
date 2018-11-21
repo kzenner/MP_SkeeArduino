@@ -1,3 +1,4 @@
+
 // SoftwareSerial - Version: Latest
 #include <SoftwareSerial.h>
 
@@ -50,8 +51,8 @@ AccelStepper stepper1(HALFSTEP, mtrPin1, mtrPin3, mtrPin2, mtrPin4);
 bool rotQueued;
 bool inRotation = false;
 float lastReturnHitTime = 0;
-unsigned long systemTime = 0;
-const long interval = 500;
+//unsigned long systemTime = 0;
+//const long interval = 500;
 
 int rotTarget = 0;
 
@@ -74,21 +75,21 @@ void setup()
   pinMode(lft, INPUT);
   pinMode(rt, INPUT);
   pinMode(button1, INPUT);
-  pinMode(button2, OUTPUT);
+  pinMode(button2, INPUT);
   pinMode(relayPin, OUTPUT);
   pinMode(devMode, INPUT);
   digitalWrite(A1, HIGH);
   digitalWrite(A2, LOW);
-  digitalWrite(button2, LOW);
   Serial.begin(9600);
 
 }
 
 //reads serial data from the computer
 void loop() {
+  //systemTime = millis(); // starts a timer
+  //if (systemTime >= 400000000) // if said timer is greater than or equal to 400 million milliseconds than
+    //systemTime = 0; // reset it to 0 and start over. systemTime is an unsigned long which contains 4,294,967,295 bytes of data.
   handleSerial();
-  if (digitalRead(up) == HIGH)
-    digitalWrite(button2, LOW);
 }
 
 
@@ -102,44 +103,46 @@ void handleSerial() {
         Tells skeeball machine the board ID in number of u's and y to complete */
       case 'b':
         if (digitalRead(A2) == HIGH) {
-          Keyboard.press('i');
+          Keyboard.press('u');
           delay(10);
-          Keyboard.release('i');
-          delay(10);
+          Keyboard.release('u');
           Keyboard.press('y');
           delay(10);
           Keyboard.release('y');
+          Keyboard.press('o');
+          delay(10);
+          Keyboard.release('o');
         } else {
-          Keyboard.press('i');
+          Keyboard.press('u');
           delay(10);
-          Keyboard.release('i');
-          delay(10);
+          Keyboard.release('u');
           Keyboard.press('y');
           delay(10);
           Keyboard.release('y');
+          Keyboard.press('i');
+          delay(10);
+          Keyboard.release('i');
           break;
         }
 
       //Stops balls when 'c' received from pc
-      case 'c':
+      case 'x':
         rotTarget = stepper1.currentPosition() + 1500;
         rotQueued = true;
-        digitalWrite(button2, HIGH);
         break;
 
       //Releases balls when 'x' received from pc
-      case 'x':
+      case 'c':
         rotTarget = stepper1.currentPosition() - 1500;
         rotQueued = true;
-        digitalWrite(button2, HIGH);
         break;
 
 
     }
     inData = ""; // Clear the shit stored from the buffer
   }
-  Serial.end();
-  Serial.begin(9600);
+  //Serial.end();
+  //Serial.begin(9600);
   //Check sensors            (int pinToRead, char keyToPress, bool prevState) [returns the new pin state to be used on the following loop]
   returnPrev = updateKeyStroke(retSensor, '0', returnPrev);
   pock1Prev = updateKeyStroke(pocket1, '1', pock1Prev);
@@ -161,12 +164,12 @@ void handleSerial() {
 
   if (rotQueued)
   {
-    if (millis() - lastReturnHitTime >= 10000)
-    {
-      rotQueued = false;
-      inRotation = true;
-      stepper1.moveTo(rotTarget);
-    }
+    //if (millis() - lastReturnHitTime >= 10000)
+    //{
+    rotQueued = false;
+    inRotation = true;
+    stepper1.moveTo(rotTarget);
+    // }
   }
   else if (inRotation)
   {
@@ -181,14 +184,11 @@ void handleSerial() {
 
 //lol try to follow along
 bool updateKeyStroke (int pinToRead, char keyToPress, bool prevState) { //Returns updated value for prevState
-  systemTime = millis(); // starts a timer
-  if (systemTime >= 400000000) // if said timer is greater than or equal to 400 million milliseconds than
-    systemTime = 0; // reset it to 0 and start over. systemTime is an unsigned long which contains 4,294,967,295 bytes of data.
   if (prevState == true) { // We're using 400 million bytes to be safe because if you went over 4.3b it would fault the arduino.
-    if (digitalRead(pinToRead) == LOW && systemTime > interval) { //Was high, now low, release key
+    if (digitalRead(pinToRead) == LOW) { // && systemTime > interval) { Was high, now low, release key
       Keyboard.release(keyToPress);
       if (keyToPress == '0') //If this is the return sensor
-        systemTime = 0;
+      //  systemTime = 0;
       {
         lastReturnHitTime = millis(); //Update last hit time for gate operations
       }
@@ -199,9 +199,9 @@ bool updateKeyStroke (int pinToRead, char keyToPress, bool prevState) { //Return
     }
   }
   else {
-    if (digitalRead(pinToRead) == HIGH && systemTime > interval) { //Was low, now high, press key
+    if (digitalRead(pinToRead) == HIGH){ // && systemTime > interval) { Was low, now high, press key
       Keyboard.press(keyToPress);
-      systemTime = 0;
+      //systemTime = 0;
       return true;
     }
     else {
